@@ -1,0 +1,59 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Theme = "light" | "dark"
+
+interface ThemeProperties {
+    theme: Theme,
+    mounted: boolean
+}
+
+export function useTheme() {
+    const [state, setState] = useState<ThemeProperties>({
+        theme: "light",
+        mounted: false
+    });
+
+    useEffect(() => {
+        function getSystemTheme(): Theme {
+            return window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark" : "light";
+        }
+
+        function getStoredTheme(): Theme | null {
+            const storedTheme = localStorage.getItem("theme");
+            if (storedTheme !== "light" && storedTheme !== "dark") return null;
+            return storedTheme
+        }
+
+        function applyTheme(nextTheme: Theme) {
+            document.documentElement.classList.toggle("dark", nextTheme === "dark");
+            document.documentElement.style.colorScheme = nextTheme;
+            localStorage.setItem("theme", nextTheme);
+        }
+
+        const initialTheme = getStoredTheme() ?? getSystemTheme();
+
+        applyTheme(initialTheme);
+        const timeoutId = setTimeout(() => {
+            setState({ theme: initialTheme, mounted: true });
+        }, 0);
+
+        return () => clearTimeout(timeoutId);
+    }, []);
+
+    function applyTheme(nextTheme: Theme) {
+        document.documentElement.classList.toggle("dark", nextTheme === "dark");
+        document.documentElement.style.colorScheme = nextTheme;
+        localStorage.setItem("theme", nextTheme);
+    }
+
+    const toggleTheme = () => {
+        const newTheme = state.theme === "light" ? "dark" : "light";
+        applyTheme(newTheme);
+        setState((prev) => ({ ...prev, theme: newTheme }));
+    }
+
+    return { theme: state.theme, toggleTheme, mounted: state.mounted }
+}
